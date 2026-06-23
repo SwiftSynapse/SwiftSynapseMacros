@@ -7,7 +7,6 @@ import SwiftSyntaxMacros
 struct SwiftSynapseMacrosPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         SpecDrivenAgentMacro.self,
-        StructuredOutputMacro.self,
         CapabilityMacro.self,
         AgentGoalMacro.self,
     ]

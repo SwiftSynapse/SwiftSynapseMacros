@@ -19,8 +19,7 @@ The macro does not generate runtime logic or LLM calls — it only validates and
 @AgentGoal(
     maxTurns: 15,
     temperature: 0.4,
-    requiresTools: true,
-    preferredFormat: .jsonSchema
+    requiresTools: true
 )
 static let researchGoal = """
 You are a research assistant. Think step-by-step. Use available tools when needed. 
@@ -53,7 +52,6 @@ static let goal_metadata: AgentGoalMetadata = AgentGoalMetadata(
     maxTurns: 12,
     temperature: 0.3,
     requiresTools: false,           // default
-    preferredFormat: .text,         // default
     validatedPrompt: "...original string..."
 )
 ```
@@ -74,7 +72,6 @@ public struct AgentGoalMetadata: Sendable {
     public let maxTurns: Int
     public let temperature: Double
     public let requiresTools: Bool
-    public let preferredFormat: TextFormat // .text or .jsonSchema
     public let validatedPrompt: String
 }
 ```

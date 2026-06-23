@@ -28,7 +28,6 @@ final class AgentGoalMacroTests: XCTestCase {
                 maxTurns: 20,
                 temperature: 0.7,
                 requiresTools: false,
-                preferredFormat: .text,
                 validatedPrompt: "Think step-by-step. Use tools when needed."
             )
             """,
@@ -49,7 +48,6 @@ final class AgentGoalMacroTests: XCTestCase {
                 maxTurns: 10,
                 temperature: 0.5,
                 requiresTools: false,
-                preferredFormat: .text,
                 validatedPrompt: "Think step-by-step."
             )
             """,
@@ -102,7 +100,6 @@ final class AgentGoalMacroTests: XCTestCase {
                 maxTurns: 20,
                 temperature: 0.7,
                 requiresTools: false,
-                preferredFormat: .text,
                 validatedPrompt: "Hello world"
             )
             """,

@@ -1,5 +1,4 @@
-// Generated strictly from CodeGenSpecs/Macros-SpecDrivenAgent.md + Overview.md
-// Do not edit manually — update the corresponding spec file and re-generate
+// Generated from CodeGenSpecs/Macros-SpecDrivenAgent.md — Do not edit manually. Update spec and re-generate.
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxBuilder
@@ -51,6 +50,12 @@ public struct SpecDrivenAgentMacro: MemberMacro, ExtensionMacro {
             """
             \(raw: access)func run(goal: String) async throws -> String {
                 try await agentRun(agent: self, goal: goal)
+            }
+            """,
+            """
+            \(raw: access)struct AgentDynamicProfile {
+                let config: AgentConfiguration
+                let tools: [any Tool]
             }
             """,
         ]

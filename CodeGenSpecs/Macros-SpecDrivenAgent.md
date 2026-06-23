@@ -1,95 +1,121 @@
 # Macro Specification: @SpecDrivenAgent
 
 ## Purpose
-The `@SpecDrivenAgent` attached macro transforms a plain Swift `actor` into a production-grade, autonomous AI agent with minimal boilerplate.  
+The `@SpecDrivenAgent` attached macro transforms a plain Swift `actor` into a production-grade AI agent with minimal boilerplate. Under Evolution Strategy B, the macro generates a `DynamicProfile` conformance that configures a `LanguageModelSession` with the agent's tools, instructions, and harness production concerns (permissions, guardrails, recovery).
 
-The macro must generate a **dynamic runtime reasoning loop** that enables true agentic behavior: the LLM (via Foundation Models or fallback DSL) decides at each step what to think, which tool/capability to call, or whether the goal is complete.
-
-The macro does **not** generate static step-by-step code. All decision-making, path selection, and continuation logic happens at runtime through repeated LLM calls.
+The macro does **not** generate a tool dispatch loop — Apple's `LanguageModelSession` handles inference, tool calling, transcript management, and streaming natively. The harness adds production capabilities on top via `DynamicProfile` modifiers.
 
 ## Requirements
 - Swift 6.2+ with strict concurrency checking enabled
-- Platforms: iOS 18+, macOS 15+, visionOS 2+ (Foundation Models compatible)
-- Dependencies: only Foundation + the three core packages:
-  - SwiftSynapseMacros (this package)
-  - SwiftResponsesDSL (or SwiftOpenResponsesDSL)
-  - SwiftLLMToolMacros
-- No additional runtime dependencies beyond Apple frameworks
+- Platforms: macOS 27+, iOS 27+, visionOS 3+
+- Dependencies: FoundationModels framework (Apple), SwiftSynapseMacros (this package)
+- No `SwiftOpenResponsesDSL` or `SwiftLLMToolMacros` dependency
 
-## Generated Public Interface
-The macro must produce the following public API on the annotated actor:
+## Generated Members
+
+The macro generates the following on the annotated actor:
+
+| Member | Kind | Type | Access | Description |
+|--------|------|------|--------|-------------|
+| `_status` | stored property | `AgentStatus` | `public` | Mutable agent status |
+| `_transcript` | stored property | `ObservableTranscript` | `public` | Observable transcript for SwiftUI |
+| `status` | computed property | `AgentStatus` | `public` | Read-only accessor |
+| `transcript` | computed property | `ObservableTranscript` | `public` | Read-only accessor |
+| `run(goal:)` | method | `async throws -> String` | `public` | Entry point — calls `agentRun()` from harness |
+
+The macro also generates an `AgentExecutable` conformance on the actor.
+
+## Generated DynamicProfile (P6)
+
+In addition to the above members, the macro generates a nested `AgentDynamicProfile` struct that configures a `LanguageModelSession`:
 
 ```swift
+// User writes:
 @SpecDrivenAgent
-actor ExampleAgent {
-    // Optional: user can override or add properties/methods
-    // Macro generates everything else
+actor WeatherAgent {
+    let config: AgentConfiguration
+
+    func execute(goal: String) async throws -> String {
+        // Agent-specific logic using AgentSessionRunner
+    }
 }
 
-enum AgentStatus {
-    case idle
-    case running
-    case paused
-    case error(Error)
-    case completed(Any) // final result, type-erased or generic in future
+// Macro generates:
+extension WeatherAgent {
+    public var _status: AgentStatus = .idle
+    public var _transcript: ObservableTranscript = ObservableTranscript()
+    public var status: AgentStatus { _status }
+    public var transcript: ObservableTranscript { _transcript }
+
+    public func run(goal: String) async throws -> String {
+        try await agentRun(agent: self, goal: goal)
+    }
+
+    struct AgentDynamicProfile: LanguageModelSession.DynamicProfile {
+        let config: AgentConfiguration
+        let tools: [any Tool]
+
+        var body: some DynamicProfile {
+            Profile {
+                Instructions { config.systemPrompt ?? "You are a helpful assistant." }
+                for tool in tools { tool }
+            }
+            .model(config.model)
+            .reasoningLevel(config.reasoningLevel ?? .moderate)
+        }
+    }
 }
+```
 
-var status: AgentStatus { get }
+The `AgentDynamicProfile` is used by agents that want profile-based session configuration. Agents can also create sessions directly via `AgentSessionRunner` if they need more control.
 
-var transcript: ObservableTranscript { get } // @Observable collection of entries
+## User Contract
 
-var client: any LLMClient { get } // default: Foundation Models, injectable
+The user must implement:
+- `func execute(goal: String) async throws -> String` — the domain-specific logic
 
-func run(goal: String) async throws -> Void
-// Starts the dynamic runtime loop, streams updates to transcript, updates status
+The user may optionally declare:
+- `let config: AgentConfiguration` — for access to model and settings
+- `var hooks: AgentHookPipeline?` — for lifecycle event interception
+- `var permissionGate: PermissionGate?` — for tool access control
 
+## Macro Declaration
 
-## Generated Runtime Behavior — Dynamic Loop
-The macro must generate a private implementation of `run(goal: String)` that contains a true runtime loop:
+```swift
+@attached(member, names: named(_status), named(_transcript), named(status), named(transcript), named(run), named(AgentDynamicProfile))
+@attached(extension, conformances: AgentExecutable)
+public macro SpecDrivenAgent() = #externalMacro(module: "SwiftSynapseMacros", type: "SpecDrivenAgentMacro")
+```
 
-1. **Initialization phase**
-   - Set `status = .running`
-   - Clear or initialize transcript
-   - Append initial `.user(goal)` entry
-   - Collect all available tools/capabilities from `@Capability` instances in scope
-   - Prepare initial context: goal + system prompt (if provided) + tool descriptions
+## Diagnostic
 
-2. **Main reasoning loop** (repeat until completion or termination condition)
-   - Build current prompt:
-     - Full transcript history (summarized if too long)
-     - Current goal
-     - List of available tools/capabilities (with descriptions and JSON schemas)
-     - Instruction: "Think step-by-step. Use tools when needed. Output FINAL ANSWER when the goal is complete."
-   - Call LLM via `client.generate(prompt: ..., tools: ...)` (prefer Foundation Models guided generation)
-   - Parse LLM response:
-     - If contains tool call(s) → execute each via tool registry → append `.tool(call, result)` to transcript → continue loop
-     - If contains final answer (detected via "FINAL ANSWER" marker, structured JSON matching @StructuredOutput, or model signal) → append `.assistant(final)` → set `status = .completed` → exit loop
-     - If error → append error entry → set `status = .error` → exit or retry
-   - Stream partial thoughts/responses to transcript as `.assistant(partial)` entries
+| ID | Severity | Message | Condition |
+|----|----------|---------|-----------|
+| `requiresActor` | error | `@SpecDrivenAgent can only be applied to an actor` | Declaration is not `ActorDeclSyntax` |
 
-3. **Termination conditions**
-   - LLM signals completion (final answer)
-   - Max turns reached (default 20, configurable via macro arg in future)
-   - Explicit user cancellation or error threshold
+## Implementation Structure
 
-4. **Observability & safety**
-   - All transcript/status updates must be observable (via Observation framework)
-   - Checkpoint transcript/state for background continuation
-   - Automatic retry on transient LLM errors (configurable)
-   - Error handling: propagate meaningful errors to caller
-   
-   
-   
-## Macro Parameters (optional, future-proof)
+```swift
+public struct SpecDrivenAgentMacro: MemberMacro, ExtensionMacro { ... }
+```
+
+The macro implementation:
+1. Validates the declaration is an actor
+2. Generates `_status` and `_transcript` stored properties
+3. Generates `status` and `transcript` computed properties
+4. Generates `run(goal:)` method calling `agentRun(agent:goal:)`
+5. Generates `AgentDynamicProfile` struct conforming to `LanguageModelSession.DynamicProfile`
+6. Generates `AgentExecutable` conformance via extension
+
+## Macro Parameters (future)
+
 Current minimal form: `@SpecDrivenAgent` (no arguments)
 
-Future supported arguments (for flexibility):
-
+Future supported arguments:
 ```swift
 @SpecDrivenAgent(
     maxTurns: 15,
-    temperature: 0.4,
-    systemPrompt: """
-    You are a helpful assistant. Think step-by-step. Use tools when needed.
-    """
+    reasoningLevel: .deep,
+    systemPrompt: "You are a helpful assistant."
 )
+```

@@ -9,7 +9,6 @@ import SwiftSynapseMacros
 
 let testMacros: [String: Macro.Type] = [
     "SpecDrivenAgent": SpecDrivenAgentMacro.self,
-    "StructuredOutput": StructuredOutputMacro.self,
     "Capability": CapabilityMacro.self,
 ]
 #endif
@@ -43,6 +42,11 @@ final class MacroExpansionTests: XCTestCase {
 
                 func run(goal: String) async throws -> String {
                     try await agentRun(agent: self, goal: goal)
+                }
+
+                struct AgentDynamicProfile {
+                    let config: AgentConfiguration
+                    let tools: [any Tool]
                 }
             }
 
@@ -114,6 +118,11 @@ final class MacroExpansionTests: XCTestCase {
                 func run(goal: String) async throws -> String {
                     try await agentRun(agent: self, goal: goal)
                 }
+
+                struct AgentDynamicProfile {
+                    let config: AgentConfiguration
+                    let tools: [any Tool]
+                }
             }
 
             extension CustomBot: AgentExecutable {
@@ -148,68 +157,16 @@ final class MacroExpansionTests: XCTestCase {
                 public func run(goal: String) async throws -> String {
                     try await agentRun(agent: self, goal: goal)
                 }
+
+                public struct AgentDynamicProfile {
+                    let config: AgentConfiguration
+                    let tools: [any Tool]
+                }
             }
 
             extension PublicAgent: AgentExecutable {
             }
             """,
-            macros: testMacros
-        )
-    }
-
-    // MARK: - @StructuredOutput
-
-    func testStructuredOutputExpandsOnStruct() throws {
-        assertMacroExpansion(
-            """
-            @StructuredOutput
-            struct Response {
-            }
-            """,
-            expandedSource: """
-            struct Response {
-
-                static var textFormat: TextFormat {
-                    .jsonSchema(name: "Response", schema: Self.jsonSchema, strict: true)
-                }
-            }
-            """,
-            macros: testMacros
-        )
-    }
-
-    func testStructuredOutputDiagnosesClass() throws {
-        assertMacroExpansion(
-            """
-            @StructuredOutput
-            class NotAStruct {
-            }
-            """,
-            expandedSource: """
-            class NotAStruct {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(message: "@StructuredOutput can only be applied to a struct", line: 1, column: 1),
-            ],
-            macros: testMacros
-        )
-    }
-
-    func testStructuredOutputDiagnosesEnum() throws {
-        assertMacroExpansion(
-            """
-            @StructuredOutput
-            enum NotAStruct {
-            }
-            """,
-            expandedSource: """
-            enum NotAStruct {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(message: "@StructuredOutput can only be applied to a struct", line: 1, column: 1),
-            ],
             macros: testMacros
         )
     }
@@ -226,8 +183,7 @@ final class MacroExpansionTests: XCTestCase {
             expandedSource: """
             struct Tools {
 
-                func agentTools() -> [AgentToolDefinition] {
-                    // TODO: bridge @LLMTool types to AgentToolDefinition
+                func agentTools() -> [any Tool] {
                     []
                 }
             }
@@ -246,8 +202,7 @@ final class MacroExpansionTests: XCTestCase {
             expandedSource: """
             class Tools {
 
-                func agentTools() -> [AgentToolDefinition] {
-                    // TODO: bridge @LLMTool types to AgentToolDefinition
+                func agentTools() -> [any Tool] {
                     []
                 }
             }

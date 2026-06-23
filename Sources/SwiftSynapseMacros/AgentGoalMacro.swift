@@ -83,7 +83,6 @@ public struct AgentGoalMacro: PeerMacro {
         let maxTurns = args.maxTurns ?? 20
         let temperature = args.temperature ?? 0.7
         let requiresTools = args.requiresTools ?? false
-        let preferredFormat = args.preferredFormat ?? ".text"
 
         var escaped = ""
         for char in promptValue {
@@ -101,7 +100,6 @@ public struct AgentGoalMacro: PeerMacro {
                 maxTurns: \(raw: maxTurns),
                 temperature: \(raw: temperature),
                 requiresTools: \(raw: requiresTools),
-                preferredFormat: \(raw: preferredFormat),
                 validatedPrompt: "\(raw: escaped)"
             )
             """
@@ -112,7 +110,6 @@ public struct AgentGoalMacro: PeerMacro {
         var maxTurns: Int?
         var temperature: Double?
         var requiresTools: Bool?
-        var preferredFormat: String?
     }
 
     private static func extractArguments(from node: AttributeSyntax) -> MacroArguments {
@@ -136,10 +133,6 @@ public struct AgentGoalMacro: PeerMacro {
             case "requiresTools":
                 if let boolLiteral = argument.expression.as(BooleanLiteralExprSyntax.self) {
                     args.requiresTools = boolLiteral.literal.tokenKind == .keyword(.true)
-                }
-            case "preferredFormat":
-                if let memberAccess = argument.expression.as(MemberAccessExprSyntax.self) {
-                    args.preferredFormat = ".\(memberAccess.declName.baseName.text)"
                 }
             default:
                 break

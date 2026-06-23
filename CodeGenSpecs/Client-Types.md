@@ -1,8 +1,6 @@
 # Spec: Client Types
 
 **Generates:**
-- `Sources/SwiftSynapseMacrosClient/AgentTool.swift`
-- `Sources/SwiftSynapseMacrosClient/TextFormat.swift`
 - `Sources/SwiftSynapseMacrosClient/Transcript.swift`
 - `Sources/SwiftSynapseMacrosClient/AgentStatus.swift`
 - `Sources/SwiftSynapseMacrosClient/AgentExecutable.swift`
@@ -10,56 +8,22 @@
 - `Sources/SwiftSynapseMacrosClient/ToolProgressUpdate.swift`
 - `Sources/SwiftSynapseMacrosClient/Macros.swift`
 
+**Removed files (Evolution P1, P4, P11):**
+- ~~`AgentTool.swift`~~ — `AgentTool` wrapper removed; use Apple's `Tool` protocol directly
+- ~~`TextFormat.swift`~~ — `TextFormat` removed; use `@Generable` for structured output
+
 ## Overview
 
 The client target (`SwiftSynapseMacrosClient`) provides:
 1. `#externalMacro` declarations for all macros
-2. Re-exports of sibling packages via `@_exported import`
-3. Core types used by generated macro code and SwiftSynapseUI
+2. Core types used by generated macro code and SwiftSynapseUI
 
-Agent harness types (tool loop, hooks, permissions, recovery, etc.) live in the `SwiftSynapseHarness` package.
+Agent harness types (session runner, hooks, permissions, recovery, etc.) live in the `SwiftSynapseHarness` package.
 
----
-
-## TranscriptEntry
-
-`TranscriptEntry` is provided by `SwiftOpenResponsesDSL` and re-exported via `@_exported import`. It is an enum with cases like `.userMessage(String)`, `.assistantMessage(String)`, etc. No local definition is needed.
-
----
-
-## AgentTool
-
-Wraps a `ToolDefinition` and provides convenience initialization from any `LLMTool` type.
-
-```swift
-import SwiftLLMToolMacros
-
-public struct AgentTool: Sendable {
-    public let definition: ToolDefinition
-
-    public init(definition: ToolDefinition)
-    public init<T: LLMTool>(_ tool: T.Type)  // bridges via T.toolDefinition
-}
-```
-
-**Dependencies:** `ToolDefinition`, `LLMTool` from `SwiftLLMToolMacros`
-
----
-
-## TextFormat
-
-Enum representing the output format for structured responses.
-
-```swift
-import SwiftLLMToolMacros
-
-public enum TextFormat: Sendable {
-    case jsonSchema(name: String, schema: JSONSchemaValue, strict: Bool)
-    case text
-}
-```
-
-**Dependencies:** `JSONSchemaValue` from `SwiftLLMToolMacros`
+**Evolution changes (P1, P4, P11):**
+- `TranscriptEntry` is no longer re-exported from `SwiftOpenResponsesDSL` — that dependency is removed. `ObservableTranscript` wraps Apple's `Transcript` type instead (see P8).
+- `AgentTool` and `TextFormat` are removed — use Apple's `Tool` protocol and `@Generable` macro directly.
+- `@_exported import SwiftLLMToolMacros` and `@_exported import SwiftOpenResponsesDSL` are removed.
 
 ---
 
@@ -178,29 +142,31 @@ public struct AgentGoalMetadata: Sendable {
     public let maxTurns: Int
     public let temperature: Double
     public let requiresTools: Bool
-    public let preferredFormat: TextFormat
     public let validatedPrompt: String
 
-    public init(maxTurns: Int, temperature: Double, requiresTools: Bool, preferredFormat: TextFormat, validatedPrompt: String)
+    public init(maxTurns: Int, temperature: Double, requiresTools: Bool, validatedPrompt: String)
 }
 ```
 
-**Dependencies:** `TextFormat`
+**Evolution change (P4):** `preferredFormat: TextFormat` removed. Structured output is handled by `@Generable` at the call site, not in goal metadata.
+
+**Dependencies:** None (stdlib only)
 
 ---
 
 ## Macros.swift
 
-Contains `#externalMacro` declarations and re-exports.
+Contains `#externalMacro` declarations.
 
 ```swift
-@_exported import SwiftLLMToolMacros
-@_exported import SwiftOpenResponsesDSL
-
 @attached(member, names: ...) public macro SpecDrivenAgent() = #externalMacro(...)
-@attached(member, names: ...) public macro StructuredOutput() = #externalMacro(...)
 @attached(member, names: ...) public macro Capability() = #externalMacro(...)
 @attached(peer, names: arbitrary) public macro AgentGoal(...) = #externalMacro(...)
 ```
+
+**Evolution changes (P1, P4):**
+- `@_exported import SwiftLLMToolMacros` removed — dependency removed in favor of Apple's `Tool` protocol
+- `@_exported import SwiftOpenResponsesDSL` removed — dependency removed in favor of `LanguageModel` protocol
+- `@StructuredOutput` macro declaration removed — replaced by Apple's `@Generable`
 
 See individual macro specs for exact `names:` lists and documentation comments.

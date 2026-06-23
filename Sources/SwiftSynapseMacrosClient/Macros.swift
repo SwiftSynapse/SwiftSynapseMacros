@@ -1,20 +1,12 @@
-// Generated strictly from CodeGenSpecs/Overview.md + Overview.md
-// Do not edit manually — update the corresponding spec file and re-generate
-@_exported import SwiftLLMToolMacros
-@_exported import SwiftOpenResponsesDSL
+// Generated from CodeGenSpecs/Client-Types.md — Do not edit manually. Update spec and re-generate.
 
-/// Generates an agent scaffold with status tracking, LLMClient wrapper, transcript, and runtime loop.
+/// Generates an agent scaffold with status tracking, transcript, runtime loop, and DynamicProfile.
 /// Attach to an `actor` declaration.
-@attached(member, names: named(_status), named(_transcript), named(status), named(transcript), named(run))
+@attached(member, names: named(_status), named(_transcript), named(status), named(transcript), named(run), named(AgentDynamicProfile))
 @attached(extension, conformances: AgentExecutable)
 public macro SpecDrivenAgent() = #externalMacro(module: "SwiftSynapseMacros", type: "SpecDrivenAgentMacro")
 
-/// Generates a `textFormat` property bridging `@LLMToolArguments`' `jsonSchema` to `TextFormat`.
-/// Attach to a `struct` declaration.
-@attached(member, names: named(textFormat))
-public macro StructuredOutput() = #externalMacro(module: "SwiftSynapseMacros", type: "StructuredOutputMacro")
-
-/// Generates an `agentTools()` method bridging `@LLMTool` types to `AgentTool`.
+/// Generates an `agentTools()` method that returns `[any Tool]`.
 /// Attach to a `struct` or `class` declaration.
 @attached(member, names: named(agentTools))
 public macro Capability() = #externalMacro(module: "SwiftSynapseMacros", type: "CapabilityMacro")
@@ -25,6 +17,5 @@ public macro Capability() = #externalMacro(module: "SwiftSynapseMacros", type: "
 public macro AgentGoal(
     maxTurns: Int = 20,
     temperature: Double = 0.7,
-    requiresTools: Bool = false,
-    preferredFormat: TextFormat = .text
+    requiresTools: Bool = false
 ) = #externalMacro(module: "SwiftSynapseMacros", type: "AgentGoalMacro")

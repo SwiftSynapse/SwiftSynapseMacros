@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Attach to a `struct` or `class` declaration to generate an `agentTools()` method that bridges `@LLMTool`-annotated types into `[AgentTool]`.
+Attach to a `struct` or `class` declaration to generate an `agentTools()` method that returns `[any Tool]`.
 
 ## Macro Declaration
 
@@ -21,23 +21,21 @@ public macro Capability() = #externalMacro(module: "SwiftSynapseMacros", type: "
 
 | Member | Kind | Type | Access | Description |
 |--------|------|------|--------|-------------|
-| `agentTools()` | method | `() -> [AgentTool]` | internal | Returns an array of `AgentTool` instances bridged from `@LLMTool` types |
+| `agentTools()` | method | `() -> [any Tool]` | internal | Returns an array of Apple `Tool` protocol conformers |
 
 ### Current Implementation
 
-Returns an empty array with a `// TODO` comment. Future versions will introspect conforming `@LLMTool` properties and bridge them automatically.
+Returns an empty array. Future versions may introspect tool properties and return them automatically.
 
 ```swift
-func agentTools() -> [AgentTool] {
-    // TODO: bridge @LLMTool types to AgentTool
+func agentTools() -> [any Tool] {
     []
 }
 ```
 
 ## Dependencies (Referenced Types)
 
-- `AgentTool` — from `SwiftSynapseMacrosClient`
-- `LLMTool` — from `SwiftLLMToolMacros` (re-exported by client)
+- `Tool` — from Apple's `FoundationModels` framework
 
 ## Diagnostic
 

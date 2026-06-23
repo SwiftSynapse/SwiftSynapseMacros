@@ -1,44 +1,26 @@
-# Spec: @StructuredOutput Macro
+# Spec: @StructuredOutput Macro — RETIRED (Evolution P4)
 
-**Generates:** `Sources/SwiftSynapseMacros/StructuredOutputMacro.swift`
-
-## Purpose
-
-Attach to a `struct` declaration to generate a `textFormat` static property that bridges the struct's `jsonSchema` (from `@LLMToolArguments` conformance) to `TextFormat`.
-
-## Macro Declaration
-
-```swift
-@attached(member, names: named(textFormat))
-public macro StructuredOutput() = #externalMacro(module: "SwiftSynapseMacros", type: "StructuredOutputMacro")
-```
-
-## Target Type
-
-`struct` only. Emits a diagnostic error if applied to any other declaration kind.
-
-## Generated Members
-
-| Member | Kind | Type | Access | Description |
-|--------|------|------|--------|-------------|
-| `textFormat` | static computed property | `TextFormat` | internal | Returns `.jsonSchema(name: "<TypeName>", schema: Self.jsonSchema, strict: true)` |
-
-The `<TypeName>` is extracted from the struct declaration's name at compile time using `structDecl.name.trimmedDescription`.
-
-## Dependencies (Referenced Types)
-
-- `TextFormat` — from `SwiftSynapseMacrosClient`
-- `Self.jsonSchema` — expected to be provided by `@LLMToolArguments` conformance (from `SwiftLLMToolMacros`)
-
-## Diagnostic
-
-| ID | Severity | Message | Condition |
-|----|----------|---------|-----------|
-| `requiresStruct` | error | `@StructuredOutput can only be applied to a struct` | Declaration is not `StructDeclSyntax` |
-
-## Implementation Structure
-
-```swift
-public struct StructuredOutputMacro: MemberMacro { ... }
-enum StructuredOutputDiagnostic: String, DiagnosticMessage { ... }
-```
+> **This spec is retired.** `@StructuredOutput` is removed entirely in Evolution P4.
+> Use Apple's `@Generable` + `@Guide` macros for structured output with constrained decoding.
+>
+> **Migration:**
+> ```swift
+> // Before (SwiftSynapse)
+> @StructuredOutput
+> struct VocabCard {
+>     let term: String
+>     let definition: String
+> }
+>
+> // After (Apple's API)
+> @Generable
+> struct VocabCard {
+>     @Guide(description: "The vocabulary term")
+>     var term: String
+>     @Guide(description: "The definition of the term")
+>     var definition: String
+> }
+> ```
+>
+> **Files to delete:** `StructuredOutputMacro.swift`, `TextFormat.swift`
+> **See also:** `Docs-StructuredOutput.md`, `Docs-HowTo-StructuredOutput.md` (also retired)

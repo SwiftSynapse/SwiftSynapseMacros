@@ -1,5 +1,5 @@
 {
-  "originHash" : "ddc9afe1ee7e3826e8946354bfeb94087d5385b696b097a125f7fd61d51698ea",
+  "originHash" : "161e0a48613eb212f488bb516cf45c9210442ede5dffa4c34bfb9d131ae28b68",
   "pins" : [
     {
       "identity" : "swift-docc-plugin",
@@ -26,24 +26,6 @@
       "state" : {
         "revision" : "4799286537280063c85a32f09884cfbca301b1a1",
         "version" : "602.0.0"
-      }
-    },
-    {
-      "identity" : "swiftllmtoolmacros",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/RichNasz/SwiftLLMToolMacros",
-      "state" : {
-        "branch" : "main",
-        "revision" : "12a2623deb4a654ef0c5483daa5660e35407a1f4"
-      }
-    },
-    {
-      "identity" : "swiftopenresponsesdsl",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/RichNasz/SwiftOpenResponsesDSL",
-      "state" : {
-        "branch" : "main",
-        "revision" : "11391d7249b0dd20558337c45a1b6c68d12bc241"
       }
     }
   ],

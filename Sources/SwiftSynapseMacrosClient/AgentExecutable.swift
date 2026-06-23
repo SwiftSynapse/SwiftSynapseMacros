@@ -10,6 +10,8 @@ public enum AgentLifecycleError: Error, Sendable {
     case emptyGoal
     /// A hook blocked agent startup.
     case blockedByHook(reason: String)
+    /// No viable model found for the requested routing strategy.
+    case noViableModel(attempted: [String], reason: String)
 }
 
 // MARK: - Agent Executable Protocol

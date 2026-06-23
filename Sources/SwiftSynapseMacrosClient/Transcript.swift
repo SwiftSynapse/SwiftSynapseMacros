@@ -1,13 +1,21 @@
-// Generated strictly from CodeGenSpecs/Client-Types.md + Overview.md
-// Do not edit manually — update the corresponding spec file and re-generate
+// Generated from CodeGenSpecs/Client-Types.md — Do not edit manually. Update spec and re-generate.
+import Foundation
 import Observation
+
+public enum TranscriptEntry: Sendable {
+    case userMessage(String)
+    case assistantMessage(String)
+    case toolCall(name: String, arguments: String)
+    case toolResult(name: String, result: String, duration: Duration)
+    case reasoning
+    case error(String)
+}
 
 @Observable
 public final class ObservableTranscript: @unchecked Sendable {
     public private(set) var entries: [TranscriptEntry] = []
     public private(set) var isStreaming: Bool = false
     public private(set) var streamingText: String = ""
-    /// Active tool progress updates, keyed by callId.
     public private(set) var toolProgress: [String: ToolProgressUpdate] = [:]
 
     public init() {}
@@ -31,12 +39,10 @@ public final class ObservableTranscript: @unchecked Sendable {
         streamingText += text
     }
 
-    /// Updates tool progress for a given call ID.
     public func updateToolProgress(_ update: ToolProgressUpdate) {
         toolProgress[update.callId] = update
     }
 
-    /// Clears tool progress for a completed call.
     public func clearToolProgress(callId: String) {
         toolProgress.removeValue(forKey: callId)
     }
@@ -48,7 +54,6 @@ public final class ObservableTranscript: @unchecked Sendable {
         toolProgress = [:]
     }
 
-    /// Restores transcript state from a saved session.
     public func restore(entries: [TranscriptEntry]) {
         self.entries = entries
         self.isStreaming = false
