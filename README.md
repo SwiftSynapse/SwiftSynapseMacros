@@ -159,3 +159,7 @@ actor ResearchAgent {
 ## Spec-Driven Development
 
 All `.swift` files are generated from specs in `CodeGenSpecs/`. To change behavior: edit the spec, regenerate, never edit generated files directly. See [CodeGenSpecs/Overview.md](CodeGenSpecs/Overview.md).
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
